@@ -1,0 +1,40 @@
+name: LMS Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/lms.py'
+      - 'tests/test_lms.py'
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Copy lms.py to test root for import
+        run: cp src/lms.py .
+
+      - name: Run LMS tests
+        run: python -m pytest tests/test_lms.py -v --tb=short
+
+      - name: Verify line count (must be 400+)
+        run: |
+          lines=$(wc -l < src/lms.py)
+          echo "lms.py has $lines lines"
+          [ "$lines" -ge 400 ] || (echo "FAIL: lms.py must have 400+ lines, got $lines" && exit 1)
